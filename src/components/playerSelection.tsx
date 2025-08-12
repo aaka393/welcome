@@ -306,7 +306,13 @@ export const PlayerSelection: React.FC<PlayerSelectionProps> = ({
                     ? "border-green-500 bg-green-50 dark:bg-green-900/20"
                     : "border-gray-200 dark:border-gray-700 hover:border-green-300 dark:hover:border-green-600"
                 }`}
-                onClick={() => togglePlayerSelection(member)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  togglePlayerSelection(member);
+                }}
+                onTouchStart={(e) => e.stopPropagation()}
+                style={{ pointerEvents: 'auto' }}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4">

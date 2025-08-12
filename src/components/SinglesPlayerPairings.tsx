@@ -175,7 +175,10 @@ export const SinglesPlayerPairings: React.FC<SinglesPlayerPairingsProps> = ({
 
   // Clear button cell renderer
   const ClearButtonCellRenderer = (params: any) => {
-    const handleClear = () => {
+    const handleClear = (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      
       const rowId = params.data.id;
 
       // Clear all players in this row
@@ -215,7 +218,10 @@ export const SinglesPlayerPairings: React.FC<SinglesPlayerPairingsProps> = ({
       <div className="flex items-center justify-center h-full">
         <button
           onClick={handleClear}
+          onMouseDown={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
           className="p-1 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+          style={{ pointerEvents: 'auto' }}
           title="Clear all players in this hole"
           {...testId(`clear-pairing-button-${params.data.id}`)}
         >
@@ -229,7 +235,11 @@ export const SinglesPlayerPairings: React.FC<SinglesPlayerPairingsProps> = ({
   const DateTimeCellRenderer = (params: any) => {
     const { data, value } = params;
 
-    const handleDateTimeChange = (newDateTime: string) => {
+    const handleDateTimeChange = (newDateTime: string, e?: React.ChangeEvent) => {
+      if (e) {
+        e.stopPropagation();
+      }
+      
       const key = `${data.id}-dateTime`;
       const displayDateTime = formatDateTimeForDisplay(newDateTime);
 
@@ -259,28 +269,34 @@ export const SinglesPlayerPairings: React.FC<SinglesPlayerPairingsProps> = ({
           type="date"
           value={date}
           onChange={(e) => {
+            e.stopPropagation();
             const newDateTime = getDateTimeStringFromFrontendDateAndTime(
               e.target.value,
               time
             );
-            handleDateTimeChange(newDateTime);
+            handleDateTimeChange(newDateTime, e);
           }}
           className="w-full text-xs border border-gray-300 dark:border-gray-600 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
           style={{ fontSize: "10px", padding: "2px" }}
+          onMouseDown={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
           {...testId(`pairing-date-input-${data.id}`)}
         />
         <input
           type="time"
           value={time}
           onChange={(e) => {
+            e.stopPropagation();
             const newDateTime = getDateTimeStringFromFrontendDateAndTime(
               date,
               e.target.value
             );
-            handleDateTimeChange(newDateTime);
+            handleDateTimeChange(newDateTime, e);
           }}
           className="w-full text-xs border border-gray-300 dark:border-gray-600 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
           style={{ fontSize: "10px", padding: "2px" }}
+          onMouseDown={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
           {...testId(`pairing-time-input-${data.id}`)}
         />
       </div>
@@ -304,7 +320,11 @@ export const SinglesPlayerPairings: React.FC<SinglesPlayerPairingsProps> = ({
   const HoleLabelCellRenderer = (params: any) => {
     const { data, value } = params;
 
-    const handleLabelChange = (newLabel: string) => {
+    const handleLabelChange = (newLabel: string, e?: React.ChangeEvent) => {
+      if (e) {
+        e.stopPropagation();
+      }
+      
       const key = `${data.id}-holeLabel`;
       setPendingChanges((prev) => new Map(prev.set(key, newLabel)));
 
@@ -323,9 +343,14 @@ export const SinglesPlayerPairings: React.FC<SinglesPlayerPairingsProps> = ({
         <input
           type="text"
           value={value || data.hole.toString()}
-          onChange={(e) => handleLabelChange(e.target.value)}
+          onChange={(e) => {
+            e.stopPropagation();
+            handleLabelChange(e.target.value, e);
+          }}
           className="w-full text-xs text-center border border-gray-300 dark:border-gray-600 rounded focus:ring-1 focus:ring-green-500 focus:border-green-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-bold"
           style={{ fontSize: "11px", padding: "4px" }}
+          onMouseDown={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
           placeholder={data.hole.toString()}
           {...testId(`hole-label-input-${data.id}`)}
         />
@@ -402,9 +427,14 @@ export const SinglesPlayerPairings: React.FC<SinglesPlayerPairingsProps> = ({
       <div className="w-full h-full flex items-center p-1">
         <select
           value={value?.id || ""}
-          onChange={(e) => handlePlayerChange(e.target.value)}
+          onChange={(e) => {
+            e.stopPropagation();
+            handlePlayerChange(e.target.value);
+          }}
           className="w-full text-xs border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
           style={{ fontSize: "10px", padding: "2px" }}
+          onMouseDown={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
           {...testId(`player-dropdown-${data.id}-${playerPosition}`)}
         >
           <option value="">Select Player</option>
@@ -427,6 +457,12 @@ export const SinglesPlayerPairings: React.FC<SinglesPlayerPairingsProps> = ({
       sortable: false,
       filter: false,
       resizable: false,
+      cellStyle: { 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center',
+        pointerEvents: 'auto'
+      },
     },
     {
       field: "displayDateTime",
@@ -438,6 +474,7 @@ export const SinglesPlayerPairings: React.FC<SinglesPlayerPairingsProps> = ({
       filter: true,
       resizable: false,
       editable: false,
+      cellStyle: { pointerEvents: 'auto' },
     },
     {
       field: "hole",
@@ -448,6 +485,7 @@ export const SinglesPlayerPairings: React.FC<SinglesPlayerPairingsProps> = ({
       sortable: true,
       filter: true,
       resizable: false,
+      cellStyle: { pointerEvents: 'auto' },
     },
     {
       field: "holeLabel",
@@ -459,6 +497,7 @@ export const SinglesPlayerPairings: React.FC<SinglesPlayerPairingsProps> = ({
       filter: true,
       resizable: false,
       editable: false,
+      cellStyle: { pointerEvents: 'auto' },
     },
     {
       field: "player1",
@@ -470,6 +509,7 @@ export const SinglesPlayerPairings: React.FC<SinglesPlayerPairingsProps> = ({
       filter: false,
       editable: false,
       valueFormatter: (params) => (params.value ? params.value.name : ""),
+      cellStyle: { pointerEvents: 'auto' },
     },
     {
       field: "player2",
@@ -481,6 +521,7 @@ export const SinglesPlayerPairings: React.FC<SinglesPlayerPairingsProps> = ({
       filter: false,
       editable: false,
       valueFormatter: (params) => (params.value ? params.value.name : ""),
+      cellStyle: { pointerEvents: 'auto' },
     },
     {
       field: "player3",
@@ -492,6 +533,7 @@ export const SinglesPlayerPairings: React.FC<SinglesPlayerPairingsProps> = ({
       filter: false,
       editable: false,
       valueFormatter: (params) => (params.value ? params.value.name : ""),
+      cellStyle: { pointerEvents: 'auto' },
     },
     {
       field: "player4",
@@ -503,6 +545,7 @@ export const SinglesPlayerPairings: React.FC<SinglesPlayerPairingsProps> = ({
       filter: false,
       editable: false,
       valueFormatter: (params) => (params.value ? params.value.name : ""),
+      cellStyle: { pointerEvents: 'auto' },
     },
   ];
 
@@ -1141,8 +1184,10 @@ export const SinglesPlayerPairings: React.FC<SinglesPlayerPairingsProps> = ({
             defaultColDef={{
               resizable: true,
               suppressMovable: true,
+              cellStyle: { pointerEvents: 'auto' },
             }}
             suppressRowClickSelection={true}
+            suppressCellSelection={true}
             enableCellTextSelection={false}
             suppressColumnVirtualisation={false}
             rowHeight={60}

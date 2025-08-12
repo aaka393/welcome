@@ -52,7 +52,9 @@ export const MeetDetailsForm: React.FC<MeetDetailsFormProps> = ({ meet, onUpdate
         {!isEditing && (
           <button
             onClick={() => setIsEditing(true)}
+            onTouchStart={(e) => e.stopPropagation()}
             className="flex items-center space-x-2 px-3 py-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+            style={{ pointerEvents: 'auto' }}
           >
             <Edit className="h-4 w-4" />
             <span>Edit</span>
@@ -142,7 +144,9 @@ export const MeetDetailsForm: React.FC<MeetDetailsFormProps> = ({ meet, onUpdate
           <button
             type="button"
             onClick={handleCancel}
+            onTouchStart={(e) => e.stopPropagation()}
             className="flex items-center space-x-2 px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            style={{ pointerEvents: 'auto' }}
           >
             <X className="h-4 w-4" />
             <span>Cancel</span>
@@ -150,7 +154,9 @@ export const MeetDetailsForm: React.FC<MeetDetailsFormProps> = ({ meet, onUpdate
           <button
             onClick={handleSave}
             disabled={saving}
+            onTouchStart={(e) => e.stopPropagation()}
             className="flex items-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white rounded-lg transition-colors"
+            style={{ pointerEvents: 'auto' }}
           >
             <Save className="h-4 w-4" />
             <span>{saving ? 'Saving...' : 'Save'}</span>

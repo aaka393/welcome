@@ -27,31 +27,64 @@ import { useCommonDataStore } from "../stores/useCommonDataStore";
 import { testId } from "../utils/testId";
 
 const ActionsCellRenderer = React.memo((props: any) => {
-  const { onEdit, onDelete, onConfigure } = props.context;
+  const { onEdit, onDelete, onConfigure } = props.context || {};
   const meetId = props.data?.id;
+  
+  // Ensure we have the required handlers
+  if (!onEdit || !onDelete || !onConfigure || !props.data) {
+    return null;
+  }
+
+  // Handle button clicks with proper event handling
+  const handleConfigure = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onConfigure(props.data);
+  };
+
+  const handleEdit = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onEdit(props.data);
+  };
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onDelete(props.data.id);
+  };
 
   return (
     <div className="flex items-center justify-center space-x-2 h-full">
       <button
         data-testid={`configure-meet-button-${meetId}`}
-        onClick={() => onConfigure(props.data)}
-        className="p-1 text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-200 rounded transition-colors"
+        onClick={handleConfigure}
+        onMouseDown={(e) => e.stopPropagation()}
+        onTouchStart={(e) => e.stopPropagation()}
+        className="p-1 text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-200 rounded transition-colors cursor-pointer"
+        style={{ pointerEvents: 'auto' }}
         title="Configure Meet"
       >
         <Settings className="h-4 w-4" />
       </button>
       <button
         data-testid={`edit-meet-button-${meetId}`}
-        onClick={() => onEdit(props.data)}
-        className="p-1 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 rounded transition-colors"
+        onClick={handleEdit}
+        onMouseDown={(e) => e.stopPropagation()}
+        onTouchStart={(e) => e.stopPropagation()}
+        className="p-1 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 rounded transition-colors cursor-pointer"
+        style={{ pointerEvents: 'auto' }}
         title="Edit Meet"
       >
         <Edit className="h-4 w-4" />
       </button>
       <button
         data-testid={`delete-meet-button-${meetId}`}
-        onClick={() => onDelete(props.data.id)}
-        className="p-1 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200 rounded transition-colors"
+        onClick={handleDelete}
+        onMouseDown={(e) => e.stopPropagation()}
+        onTouchStart={(e) => e.stopPropagation()}
+        className="p-1 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200 rounded transition-colors cursor-pointer"
+        style={{ pointerEvents: 'auto' }}
         title="Delete Meet"
       >
         <Trash2 className="h-4 w-4" />
@@ -211,6 +244,12 @@ export const MeetGrid: React.FC = () => {
         pinned: "left",
         resizable: false,
         headerClass: "ag-header-cell-label",
+        cellStyle: { 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center',
+          pointerEvents: 'auto'
+        },
       },
       {
         field: "name",
@@ -392,6 +431,8 @@ export const MeetGrid: React.FC = () => {
                   suppressRowVirtualisation={false}
                   ensureDomOrder={true}
                   getRowId={(params) => params.data.id}
+                  suppressRowClickSelection={true}
+                  suppressCellSelection={true}
                   getRowStyle={() => ({
                     background: "transparent",
                   })}

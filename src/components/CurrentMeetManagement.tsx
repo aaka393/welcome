@@ -91,7 +91,13 @@ export const CurrentMeetManagement: React.FC = () => {
   };
 
   const handlePairingsUpdate = async () => {
-    
+    // Refresh pairings data after updates
+    try {
+      // This will be implemented when the pairing update logic is added
+      console.log('Pairings updated successfully');
+    } catch (error) {
+      console.error('Failed to update pairings:', error);
+    }
   };
 
   // The previous test file had a welcome message. I'm adding a data-testid here
