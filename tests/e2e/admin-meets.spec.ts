@@ -40,76 +40,92 @@ test('Admin can configure and edit a meet', async ({ page }) => {
     const clickButtonInRow = async (meetName: string, buttonPosition: number, buttonName: string) => {
         console.log(`Attempting to click ${buttonName} button for meet: ${meetName}`);
         
-        // Strategy 1: Find data row (skip header) that contains the meet name
-        const dataRowSelector = `.ag-center-cols-container div[role="row"]:has-text("${meetName}")`;
-        const buttonSelector = `${dataRowSelector} div[role="gridcell"]:first-child button:nth-child(${buttonPosition})`;
+        // Strategy 1: Find the specific data row by looking for meet name in the grid
+        // First, let's find all data rows and identify the correct one
+        const allRows = await page.locator('div[role="row"]').all();
+        let targetRowIndex = -1;
+        
+        for (let i = 0; i < allRows.length; i++) {
+            const rowText = await allRows[i].textContent();
+            if (rowText && rowText.includes(meetName)) {
+                // Make sure this row actually has buttons (not a header row)
+                const buttonsInRow = await allRows[i].locator('button').count();
+                if (buttonsInRow > 0) {
+                    targetRowIndex = i;
+                    console.log(`Found target row at index ${i} with ${buttonsInRow} buttons`);
+                    break;
+                }
+            }
+        }
+        
+        if (targetRowIndex === -1) {
+            throw new Error(`Could not find data row with meet name "${meetName}" that contains buttons`);
+        }
         
         try {
-            // Wait for the data row to be visible
-            await page.waitForSelector(dataRowSelector, { timeout: 10000 });
-            console.log(`Data row found for meet: ${meetName}`);
+            // Strategy 1: Use the identified row index to click the button
+            const targetRow = allRows[targetRowIndex];
+            const buttons = await targetRow.locator('button').all();
             
-            // Wait for the specific button to be visible and enabled
-            await page.waitForSelector(buttonSelector, { 
-                state: 'visible', 
-                timeout: 5000 
-            });
+            if (buttons.length < buttonPosition) {
+                throw new Error(`Row only has ${buttons.length} buttons, cannot click position ${buttonPosition}`);
+            }
+            
+            const targetButton = buttons[buttonPosition - 1]; // Convert to 0-based index
             
             // Verify button is enabled before clicking
-            const isEnabled = await page.isEnabled(buttonSelector);
+            const isEnabled = await targetButton.isEnabled();
             if (!isEnabled) {
                 throw new Error(`${buttonName} button is disabled`);
             }
             
-            // Click the button
-            await page.click(buttonSelector, { timeout: 5000 });
-            console.log(`Successfully clicked ${buttonName} button`);
+            // Scroll into view and click
+            await targetButton.scrollIntoViewIfNeeded();
+            await targetButton.click({ timeout: 5000 });
+            console.log(`Successfully clicked ${buttonName} button using row index approach`);
             return true;
             
         } catch (error) {
-            console.log(`Strategy 1 failed for ${buttonName}: ${error.message}`);
+            console.log(`Row index strategy failed for ${buttonName}: ${error.message}`);
             
-            // Strategy 2: Try with row index approach
+            // Strategy 2: Try with test-id approach (fallback)
             try {
-                // Find all data rows and look for the one with our meet name
-                const allDataRows = await page.locator('.ag-center-cols-container div[role="row"]').all();
-                let targetRowIndex = -1;
+                // Look for buttons with specific test-ids that might contain meet ID
+                const buttonTestIds = [
+                    `configure-meet-button-`,
+                    `edit-meet-button-`,
+                    `delete-meet-button-`
+                ];
+                const targetTestIdPrefix = buttonTestIds[buttonPosition - 1];
                 
-                for (let i = 0; i < allDataRows.length; i++) {
-                    const rowText = await allDataRows[i].textContent();
+                // Try to find button by partial test-id match
+                const testIdButtons = await page.locator(`button[data-testid^="${targetTestIdPrefix}"]`).all();
+                
+                for (const button of testIdButtons) {
+                    // Check if this button is in a row that contains our meet name
+                    const buttonRow = button.locator('xpath=ancestor::div[@role="row"]');
+                    const rowText = await buttonRow.textContent();
+                    
                     if (rowText && rowText.includes(meetName)) {
-                        targetRowIndex = i;
-                        break;
+                        await button.scrollIntoViewIfNeeded();
+                        await button.click({ timeout: 5000 });
+                        console.log(`Successfully clicked ${buttonName} button using test-id approach`);
+                        return true;
                     }
                 }
                 
-                if (targetRowIndex === -1) {
-                    throw new Error(`Row with meet name "${meetName}" not found`);
-                }
+                throw new Error(`No ${buttonName} button found with test-id approach`);
                 
-                const indexedRowSelector = `.ag-center-cols-container div[role="row"]:nth-child(${targetRowIndex + 1})`;
-                const indexedButtonSelector = `${indexedRowSelector} div[role="gridcell"]:first-child button:nth-child(${buttonPosition})`;
-                
-                await page.waitForSelector(indexedButtonSelector, { 
-                    state: 'visible', 
-                    timeout: 5000 
-                });
-                
-                await page.click(indexedButtonSelector, { timeout: 5000 });
-                console.log(`Successfully clicked ${buttonName} button using row index approach`);
-                return true;
-                
-            } catch (indexError) {
-                console.log(`Strategy 2 failed for ${buttonName}: ${indexError.message}`);
+            } catch (testIdError) {
+                console.log(`Test-id strategy failed for ${buttonName}: ${testIdError.message}`);
                 
                 // Strategy 3: Direct button search by title within grid
                 try {
                     const buttonTitles = ['Configure Meet', 'Edit Meet', 'Delete Meet'];
                     const expectedTitle = buttonTitles[buttonPosition - 1];
-                    const titleSelector = `.ag-center-cols-container button[title="${expectedTitle}"]`;
                     
-                    // Get all buttons with this title and find the one in the correct row
-                    const titleButtons = await page.locator(titleSelector).all();
+                    // Get all buttons with this title
+                    const titleButtons = await page.locator(`button[title="${expectedTitle}"]`).all();
                     
                     for (const button of titleButtons) {
                         // Check if this button is in a row that contains our meet name
@@ -117,6 +133,7 @@ test('Admin can configure and edit a meet', async ({ page }) => {
                         const rowText = await buttonRow.textContent();
                         
                         if (rowText && rowText.includes(meetName)) {
+                            await button.scrollIntoViewIfNeeded();
                             await button.click({ timeout: 5000 });
                             console.log(`Successfully clicked ${buttonName} button using title search`);
                             return true;
