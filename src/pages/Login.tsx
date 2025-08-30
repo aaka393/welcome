@@ -1,27 +1,71 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
+import Button from "../components/UI/Button";
+import LegalDialog from "../components/UI/LegalDialog";
 import { useAuthStore } from "../stores/useAuthStore";
-import Button from "../components/Button";
-
+import Layout from "../components/Layout/Layout";
 
 const Login: React.FC = () => {
-  const { loginWithProvider, isLoading } = useAuthStore();
+  const navigate = useNavigate();
+  const [showTerms, setShowTerms] = useState(false);
+  const [showPrivacy, setShowPrivacy] = useState(false);
+  const { user, loginWithProvider } = useAuthStore();
+  const [isLoading, setIsLoading] = useState(false)
 
+  useEffect(() => {
+    if (user) {
+      navigate('/');
+    }
+  }, [user, navigate]);
 
-  const handleContinueWithGoogle = () => {
-    loginWithProvider("google");
+  const handleContinueWithGoogle = async () => {
+    try {
+      setIsLoading(true);
+      await loginWithProvider("google");
+    } catch (error) {
+      console.error("Login failed", error);
+      setIsLoading(false);
+    }
   };
 
-  return (
 
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center px-4 py-12">
+          <div className="text-center">
+            <div className="animate-spin w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+            <p className="text-gray-600">Authenticating...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+  return (
+    <Layout>
       <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center px-4 py-12">
         <div className="max-w-md w-full">
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-orange-200 p-8">
+            <div className="text-center mb-8">
+              <img
+                src="/images/ai-pujari-logo.png"
+                alt="AI Pujari"
+                className="w-48 h-48 object-contain mx-auto mb-4"
+              />
+              <h1 className="text-3xl font-bold text-gray-800 mb-2">
+                Welcome Back
+              </h1>
+              <p className="text-gray-600">
+                Sign in with Google to continue your spiritual journey
+              </p>
+            </div>
+
             <div className="space-y-6">
               <Button
                 onClick={handleContinueWithGoogle}
                 loading={isLoading}
-                className="w-full hover:cursor-pointer"
+                className="w-full"
                 size="lg"
               >
                 <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24">
@@ -42,13 +86,54 @@ const Login: React.FC = () => {
                     d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                   />
                 </svg>
-                 Continue with Google
+                Continue with Google
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Button>
             </div>
+
+            <div className="mt-8 pt-6 border-t border-orange-200 text-center">
+              <p className="text-sm text-gray-600">
+                By continuing, you agree to our{" "}
+                <button
+                  onClick={() => setShowTerms(true)}
+                  className="text-orange-600 hover:text-orange-700 font-medium underline"
+                >
+                  Terms of Service
+                </button>{" "}
+                and{" "}
+                <button
+                  onClick={() => setShowPrivacy(true)}
+                  className="text-orange-600 hover:text-orange-700 font-medium underline"
+                >
+                  Privacy Policy
+                </button>
+              </p>
+              <p className="text-sm text-gray-600 mt-2">
+                New to AI Pujari?{" "}
+                <Link
+                  to="/"
+                  className="text-orange-600 hover:text-orange-700 font-medium"
+                >
+                  Learn more
+                </Link>
+              </p>
+            </div>
           </div>
         </div>
+
+        {/* Legal Dialogs */}
+        <LegalDialog
+          isOpen={showTerms}
+          onClose={() => setShowTerms(false)}
+          type="terms"
+        />
+        <LegalDialog
+          isOpen={showPrivacy}
+          onClose={() => setShowPrivacy(false)}
+          type="privacy"
+        />
       </div>
+    </Layout>
   );
 };
 
