@@ -1,8 +1,6 @@
 import { create } from 'zustand';
 import { DiscountCode, CreateDiscountCodeRequest, UpdateDiscountCodeRequest } from '../types/discount';
-import { discountService, adminLogin as apiAdminLogin } from '../services/discountService';
-import { useAuthStore } from './useAuthStore';
-import { User } from '../types/auth';
+import { discountService } from '../services/discountService';
 import { useUserMetadataStore } from './userMetadataStore';
 
 interface DiscountStore {
@@ -10,17 +8,14 @@ interface DiscountStore {
     discountCodes: DiscountCode[];
     isLoading: boolean;
     error: string | null;
-    isAuthenticated: boolean;
 
     // Actions
-    adminLogin: (username: string, password: string) => Promise<boolean>;
     fetchDiscountCodes: () => Promise<void>;
     createDiscountCode: (discountCode: CreateDiscountCodeRequest) => Promise<boolean>;
     updateDiscountCode: (code: string, discountCode: UpdateDiscountCodeRequest) => Promise<boolean>;
     deleteDiscountCode: (code: string) => Promise<boolean>;
     validateDiscountCode: (code: string) => Promise<{ valid: boolean; discount?: DiscountCode; error?: string }>;
     clearError: () => void;
-    logout: () => void;
 }
 
 export const useDiscountStore = create<DiscountStore>((set, get) => ({
@@ -28,59 +23,6 @@ export const useDiscountStore = create<DiscountStore>((set, get) => ({
     discountCodes: [],
     isLoading: false,
     error: null,
-    isAuthenticated: false,
-
-    // Admin login
-    adminLogin: async (username: string, password: string) => {
-        set({ isLoading: true, error: null });
-
-        try {
-            const result = await apiAdminLogin(username, password);
-
-            if (result.success) {
-                const responseData = result.data as Partial<User>;
-
-
-                const user: User = {
-                    id: responseData?.id || '',
-                    username: responseData?.username || '',
-                    email: responseData?.email || '',
-                    role: responseData?.role?.toLowerCase() || 'user',
-                    profilePicture: null,
-                    createdDate: responseData?.createdDate || '',
-                    keycloakId: responseData?.keycloakId || '',
-                    isEmailVerified: true, // or false, depending on your logic
-                    provider: 'local' // or 'admin' or whatever fits your app
-                };
-
-                const setUser = useAuthStore.getState().setUser;
-                setUser(user);
-
-                set({
-                    isAuthenticated: true,
-                    isLoading: false,
-                });
-
-                return true;
-            } else {
-                set({
-                    error: result.error || 'Login failed',
-                    isLoading: false,
-                    isAuthenticated: false
-                });
-                return false;
-            }
-        } catch (error) {
-            set({
-                error: (error as Error).message || 'Login failed',
-                isLoading: false,
-                isAuthenticated: false
-            });
-            return false;
-        }
-    },
-
-
 
     // Fetch all discount codes
     fetchDiscountCodes: async () => {
@@ -212,12 +154,4 @@ export const useDiscountStore = create<DiscountStore>((set, get) => ({
     clearError: () => {
         set({ error: null });
     },
-
-    logout: () => {
-        set({
-            isAuthenticated: false,
-            discountCodes: [],
-            error: null
-        });
-    }
 }));

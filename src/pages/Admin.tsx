@@ -4,7 +4,7 @@ import { Users, FileText, RefreshCw, DollarSign, Calendar, Settings } from "luci
 import Layout from "../components/Layout/Layout";
 import Button from "../components/UI/Button";
 import Input from "../components/UI/Input";
-import { useAuthStore } from "../stores/useAuthStore";
+import { useAdminAuthStore } from "../stores/adminAuthStore";
 import { useDiscountStore } from "../stores/discountStore";
 import { useToast } from "../components/UI/ToastContainer";
 import DiscountCodeForm from "../components/Discount/DiscountCodeForm";
@@ -17,7 +17,6 @@ import {
   CreateDiscountCodeRequest,
   UpdateDiscountCodeRequest,
 } from "../types/discount";
-import { useShallow } from "zustand/react/shallow";
 
 // Helper: Show revenue totals grouped by currency for successful payments
 const RevenueByCurrency: React.FC<{ bookings: any[] }> = ({ bookings }) => {
@@ -52,19 +51,20 @@ const RevenueByCurrency: React.FC<{ bookings: any[] }> = ({ bookings }) => {
 };
 
 const Admin: React.FC = () => {
-  const { isAuthenticated, user } = useAuthStore(
-    useShallow((state) => ({
-      logout: state.logout,
-      isAuthenticated: state.isAuthenticated,
-      user: state.user,
-    }))
-  );
+  const { 
+    isAuthenticated, 
+    user, 
+    login: adminLogin, 
+    isLoading: authLoading, 
+    error: authError,
+    clearError: clearAuthError,
+    logout: adminLogout
+  } = useAdminAuthStore();
 
   const {
     discountCodes,
     isLoading: discountLoading,
     error: discountError,
-    adminLogin: discountAdminLogin,
     fetchDiscountCodes,
     createDiscountCode,
     updateDiscountCode,
@@ -72,10 +72,7 @@ const Admin: React.FC = () => {
     clearError,
   } = useDiscountStore();
   const { showSuccess, showError } = useToast();
-  console.log("user", user)
-  console.log("isAuthenticated", isAuthenticated)
 
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [email, setEmail] = useState("pujari@admin.com");
   const [password, setPassword] = useState("");
   const [activeTab, setActiveTab] = useState("bookings");
@@ -86,31 +83,29 @@ const Admin: React.FC = () => {
   );
 
   useEffect(() => {
-    if (isAuthenticated && user?.role?.toLowerCase() === "admin") {
+    if (isAuthenticated && user?.role === "admin") {
       fetchDiscountCodes();
       // Load bookings for header stats
       fetchBookings();
     }
-  }, [isAuthenticated, user, fetchDiscountCodes, fetchBookings]);
+  }, [isAuthenticated, user?.role, fetchDiscountCodes, fetchBookings]);
 
   useEffect(() => {
     return () => {
-      clearError();
+      clearAuthError();
     };
-  }, [clearError]);
+  }, [clearAuthError]);
 
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoggingIn(true);
+    clearAuthError();
 
-    const success = await discountAdminLogin(email, password);
+    const success = await adminLogin(email, password);
     if (!success) {
-      showError("Login Failed", discountError || "Invalid credentials");
+      showError("Login Failed", authError || "Invalid credentials");
     } else {
       showSuccess("Login Successful", "Welcome to the admin dashboard");
     }
-
-    setIsLoggingIn(false);
   };
 
   const handleCreateDiscountCode = async (
@@ -192,7 +187,8 @@ const Admin: React.FC = () => {
     setEditingDiscount(null);
   };
 
-  if (!isAuthenticated || !user || user.role?.toLowerCase() !== "admin") {
+  // Show login form if not authenticated or not admin
+  if (!isAuthenticated || !user || user.role !== "admin") {
     return (
       <Layout>
         <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center px-4">
@@ -210,12 +206,19 @@ const Admin: React.FC = () => {
                 <p className="text-gray-600">Enter your admin credentials</p>
               </div>
 
+              {authError && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-sm text-red-600">{authError}</p>
+                </div>
+              )}
+
               <form onSubmit={handleAdminLogin} className="space-y-6">
                 <Input
                   type="email"
                   label="Email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  disabled={authLoading}
                   required
                 />
 
@@ -225,18 +228,36 @@ const Admin: React.FC = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter password"
+                  disabled={authLoading}
                   required
                 />
 
                 <Button
                   type="submit"
-                  loading={isLoggingIn}
+                  loading={authLoading}
                   className="w-full"
                   size="lg"
+                  disabled={authLoading}
                 >
                   Login to Admin
                 </Button>
               </form>
+
+              {isAuthenticated && user && user.role !== "admin" && (
+                <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-sm text-yellow-700">
+                    You don't have admin privileges. Please contact support if you believe this is an error.
+                  </p>
+                  <Button
+                    onClick={adminLogout}
+                    variant="outline"
+                    size="sm"
+                    className="mt-2"
+                  >
+                    Logout
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -250,8 +271,17 @@ const Admin: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold text-gray-800">Admin Dashboard</h1>
-          <div className="text-sm text-gray-600">
-            Welcome, {user.username || user.email.split("@")[0]}
+          <div className="flex items-center space-x-4">
+            <div className="text-sm text-gray-600">
+              Welcome, {user.username || user.email.split("@")[0]}
+            </div>
+            <Button
+              onClick={adminLogout}
+              variant="outline"
+              size="sm"
+            >
+              Logout
+            </Button>
           </div>
         </div>
 

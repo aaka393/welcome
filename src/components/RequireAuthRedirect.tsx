@@ -1,10 +1,15 @@
 import { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../stores/useAuthStore';
+import { useAdminAuthStore } from '../stores/adminAuthStore';
 
 const RequireAuthRedirect = () => {
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const authState = useAuthStore(state => state.authState);
+  const adminAuth = useAdminAuthStore(state => ({ 
+    isAuthenticated: state.isAuthenticated, 
+    user: state.user 
+  }));
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -14,29 +19,25 @@ const RequireAuthRedirect = () => {
       location.pathname.startsWith(route)
     );
 
-    // Redirect unauthenticated users from protected routes to login
+    // Special handling for admin route
+    if (location.pathname === '/admin') {
+      // Admin route uses separate auth system
+      if (adminAuth.isAuthenticated && adminAuth.user?.role !== 'admin') {
+        navigate('/', { replace: true });
+      }
+      return; // Don't apply regular auth checks to admin route
+    }
+
+    // Redirect unauthenticated users from other protected routes to login
     if (
       !isAuthenticated &&
       authState === 'invalid' &&
-      isProtectedRoute &&
-      location.pathname !== '/admin'
+      isProtectedRoute
     ) {
       navigate('/', { replace: true });
     }
 
-    // Special handling for admin route
-    if (
-      location.pathname === '/admin' &&
-      isAuthenticated &&
-      authState === 'valid'
-    ) {
-      const user = useAuthStore.getState().user;
-      if (user && user.role?.toLowerCase() !== 'admin') {
-        navigate('/', { replace: true });
-      }
-    }
-
-  }, [isAuthenticated, authState, location.pathname, navigate]);
+  }, [isAuthenticated, authState, adminAuth.isAuthenticated, adminAuth.user?.role, location.pathname, navigate]);
 
   return null;
 };

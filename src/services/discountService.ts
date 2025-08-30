@@ -70,12 +70,16 @@ export const adminLogin = async (
 
     return {
       success: false,
-      error: 'Unexpected response format'
+      error: response.data.message || 'Unexpected response format'
     };
   } catch (error) {
+    console.error('Admin login error:', error);
     return {
       success: false,
-      error: (error as AxiosError<{ detail?: string }>).response?.data?.detail || (error as Error).message || 'Login failed'
+      error: (error as AxiosError<{ message?: string; detail?: string }>).response?.data?.message || 
+             (error as AxiosError<{ detail?: string }>).response?.data?.detail || 
+             (error as Error).message || 
+             'Login failed'
     };
   }
 };
